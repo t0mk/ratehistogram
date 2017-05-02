@@ -53,6 +53,16 @@ func NewHMap(conf map[string]Conf) (HMap, error) {
 	return ret, nil
 }
 
+// Observe returns names os histos plus counts
+func (hmap *HMap) Observe() map[string][]int64 {
+	ret := make(map[string][]int64)
+	for k, v := range *hmap {
+		ret[k] = v.Observe()
+	}
+	return ret
+
+}
+
 // NewRateHistogram creates RateHistogram and inits counters
 func NewRateHistogram(conf Conf) (*RateHistogram, error) {
 	edges := conf.Edges
