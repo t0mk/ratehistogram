@@ -25,12 +25,12 @@ type HMap map[string]*RateHistogram
 
 // Conf is prescription for rate histogram
 type Conf struct {
-	secs  int
-	edges []float64
+	Edges []float64 `yaml: "edges"`
+	Secs  int       `yaml: "secs"`
 }
 
 // NewHMapFromYAML creates histomap from YAML
-func NewHMapFromYAML(data []byte) (*HMap, error) {
+func NewHMapFromYAML(data []byte) (HMap, error) {
 	conf := make(map[string]Conf)
 	err := yaml.Unmarshal(data, &conf)
 	if err != nil {
@@ -40,7 +40,7 @@ func NewHMapFromYAML(data []byte) (*HMap, error) {
 }
 
 // NewHMap creates map of rate histograms
-func NewHMap(conf map[string]Conf) (*HMap, error) {
+func NewHMap(conf map[string]Conf) (HMap, error) {
 	ret := make(HMap)
 	for k, v := range conf {
 
@@ -50,15 +50,13 @@ func NewHMap(conf map[string]Conf) (*HMap, error) {
 		}
 		ret[k] = nh
 	}
-	return &ret, nil
+	return ret, nil
 }
 
 // NewRateHistogram creates RateHistogram and inits counters
-// interval is the lifespan of record in the rate histogram
-//func NewRateHistogram(edges []float64, interval time.Duration) (*RateHistogram, error) {
 func NewRateHistogram(conf Conf) (*RateHistogram, error) {
-	edges := conf.edges
-	interval := time.Second * time.Duration(conf.secs)
+	edges := conf.Edges
+	interval := time.Second * time.Duration(conf.Secs)
 	bins := make([]*ratecounter.RateCounter, len(edges))
 	for i := range edges {
 		bins[i] = ratecounter.NewRateCounter(interval)
@@ -67,7 +65,7 @@ func NewRateHistogram(conf Conf) (*RateHistogram, error) {
 	if !sort.Float64sAreSorted(edges) {
 		return nil, errors.New("edges array must be sorted")
 	}
-	return &RateHistogram{bins: bins, edges: edges, highestEdge: highestEdge, secs: conf.secs}, nil
+	return &RateHistogram{bins: bins, edges: edges, highestEdge: highestEdge, secs: conf.Secs}, nil
 }
 
 // Record records value to proper bucket
