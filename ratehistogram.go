@@ -25,8 +25,8 @@ type HMap map[string]*RateHistogram
 
 // Conf is prescription for rate histogram
 type Conf struct {
-	Edges []float64 `yaml: "edges"`
-	Secs  int       `yaml: "secs"`
+	Edges []float64 `yaml:"edges"`
+	Secs  int       `yaml:"secs"`
 }
 
 // NewHMapFromYAML creates histomap from YAML
