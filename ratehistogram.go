@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/paulbellamy/ratecounter"
+	"gopkg.in/yaml.v2"
 )
 
 // RateHistogram has bins and edges. bins are counters.
@@ -16,10 +17,48 @@ type RateHistogram struct {
 	bins        []*ratecounter.RateCounter
 	edges       []float64
 	highestEdge float64
+	secs        int
+}
+
+// HMap is just a map of histograms, for convenience
+type HMap map[string]*RateHistogram
+
+// Conf is prescription for rate histogram
+type Conf struct {
+	secs  int
+	edges []float64
+}
+
+// NewHMapFromYAML creates histomap from YAML
+func NewHMapFromYAML(data []byte) (*HMap, error) {
+	conf := make(map[string]Conf)
+	err := yaml.Unmarshal(data, &conf)
+	if err != nil {
+		return nil, err
+	}
+	return NewHMap(conf)
+}
+
+// NewHMap creates map of rate histograms
+func NewHMap(conf map[string]Conf) (*HMap, error) {
+	ret := make(HMap)
+	for k, v := range conf {
+
+		nh, err := NewRateHistogram(v)
+		if err != nil {
+			return nil, err
+		}
+		ret[k] = nh
+	}
+	return &ret, nil
 }
 
 // NewRateHistogram creates RateHistogram and inits counters
-func NewRateHistogram(edges []float64, interval time.Duration) (*RateHistogram, error) {
+// interval is the lifespan of record in the rate histogram
+//func NewRateHistogram(edges []float64, interval time.Duration) (*RateHistogram, error) {
+func NewRateHistogram(conf Conf) (*RateHistogram, error) {
+	edges := conf.edges
+	interval := time.Second * time.Duration(conf.secs)
 	bins := make([]*ratecounter.RateCounter, len(edges))
 	for i := range edges {
 		bins[i] = ratecounter.NewRateCounter(interval)
@@ -28,7 +67,7 @@ func NewRateHistogram(edges []float64, interval time.Duration) (*RateHistogram, 
 	if !sort.Float64sAreSorted(edges) {
 		return nil, errors.New("edges array must be sorted")
 	}
-	return &RateHistogram{bins: bins, edges: edges, highestEdge: highestEdge}, nil
+	return &RateHistogram{bins: bins, edges: edges, highestEdge: highestEdge, secs: conf.secs}, nil
 }
 
 // Record records value to proper bucket
