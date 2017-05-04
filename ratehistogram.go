@@ -20,13 +20,19 @@ type RateHistogram struct {
 	secs        int
 }
 
+// NamedArray is a helper type for e.g. serialization
+type NamedArray struct {
+	Name string
+	Bins []int64
+}
+
 // HMap is just a map of histograms, for convenience
 type HMap map[string]*RateHistogram
 
 // Conf is prescription for rate histogram
 type Conf struct {
-	Edges []float64 `yaml:"edges"`
-	Secs  int       `yaml:"secs"`
+	Edges []float64 `yaml: "edges"`
+	Secs  int       `yaml: "secs"`
 }
 
 // NewHMapFromYAML creates histomap from YAML
@@ -53,7 +59,7 @@ func NewHMap(conf map[string]Conf) (HMap, error) {
 	return ret, nil
 }
 
-// Observe returns names os histos plus counts
+// Observe returns names of histos plus counts
 func (hmap *HMap) Observe() map[string][]int64 {
 	ret := make(map[string][]int64)
 	for k, v := range *hmap {
@@ -61,6 +67,21 @@ func (hmap *HMap) Observe() map[string][]int64 {
 	}
 	return ret
 
+}
+
+// GetSnapshot returns snapshot for a particular hits
+func (hmap *HMap) GetSnapshot(hname string) *NamedArray {
+	return &NamedArray{Name: hname, Bins: (*hmap)[hname].Observe()}
+
+}
+
+// GetNames returns the names of recorded histograms
+func (hmap *HMap) GetNames() []string {
+	ret := make([]string, 0)
+	for k := range *hmap {
+		ret = append(ret, k)
+	}
+	return ret
 }
 
 // NewRateHistogram creates RateHistogram and inits counters
